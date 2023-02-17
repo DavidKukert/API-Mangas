@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String         @id @default(uuid())
+  username  String         @unique()
+  password  String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt()
+  roles     RolesOnUsers[]
+
+  @@map("users")
+}
+
+model Role {
+  id              String               @id @default(uuid())
+  roleName        String               @unique()
+  roleDescription String
+  permissions     PermissionsOnRoles[]
+  users           RolesOnUsers[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id                    String               @id @default(uuid())
+  permissionName        String               @unique()
+  permissionDescription String
+  roles                 PermissionsOnRoles[]
+
+  @@map("permissions")
+}
+
+model PermissionsOnRoles {
+  id           String     @id @default(uuid())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId       String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId String
+
+  @@unique([roleId, permissionId])
+  @@map("permissionsOnRoles")
+}
+
+model RolesOnUsers {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId String
+
+  @@unique([userId, roleId])
+  @@map("rolesOnUsers")
+}
+
+model Serie {
+  id            String         @id @default(uuid())
+  serieTitle    String         @unique
+  serieTitleAlt String?
+  serieAuthors  String
+  serieCover    String
+  serieSynopsis String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt()
+  tags          TagsOnSeries[]
+  Chapters      Chapter[]
+
+  @@map("series")
+}
+
+model Tag {
+  id       String         @id @default(uuid())
+  tagTitle String         @unique
+  tagType  String
+  series   TagsOnSeries[]
+
+  @@map("tags")
+}
+
+model TagsOnSeries {
+  id      String @id @default(uuid())
+  serie   Serie  @relation(fields: [serieId], references: [id], onDelete: Cascade)
+  serieId String
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId   String
+
+  @@unique([serieId, tagId])
+  @@map("tagsOnSeries")
+}
+
+model Chapter {
+  id            String   @id @default(uuid())
+  chapterNumber String
+  chapterTitle  String?
+  chapterPages  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt()
+  serie         Serie    @relation(fields: [serieId], references: [id], onDelete: Cascade)
+  serieId       String
+
+  @@unique([chapterNumber, serieId])
+  @@map("chapters")
+}
